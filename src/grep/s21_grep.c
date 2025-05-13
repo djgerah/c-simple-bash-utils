@@ -244,23 +244,51 @@ void grep_in_file(grep_opt *opt, const char *file_name, int file_count) {
   }
 }
 
-int main(int argc, char *argv[]) {
-  if (argc < 2) {
-    fprintf(stderr, "s21_grep: too few arguments.\n");
-    return 1;
-  }
+bool grep_process(int argc, char *argv[], grep_opt *opt) {
+  bool is_error = false;
 
-  grep_opt opt;
-  initialization(&opt);
-
-  if (parse_arguments(argc, argv, &opt) == 0) {
+  if (parse_arguments(argc, argv, opt) == 0) {
     int file_count = argc - optind;
     for (int i = optind; i < argc; i++) {
-      grep_in_file(&opt, argv[i], file_count);
+      grep_in_file(opt, argv[i], file_count);
     }
+  } else {
+    is_error = false;
   }
 
-  free_patterns(&opt);
+  return is_error;
+}
 
-  return 0;
+void initialization(grep_opt *opt) {
+  opt->patterns = NULL;
+  opt->pattern_count = 0;
+
+  opt->e = false;
+  opt->f = false;
+  opt->i = false;
+  opt->v = false;
+  opt->c = false;
+  opt->l = false;
+  opt->n = false;
+  opt->h = false;
+  opt->s = false;
+  opt->o = false;
+}
+
+int main(int argc, char *argv[]) {
+  bool is_error = false;
+
+  if (argc < 2) {
+    fprintf(stderr, "s21_grep: too few arguments.\n");
+    is_error = true;
+  } else {
+    grep_opt opt;
+    initialization(&opt);
+
+    is_error = grep_process(argc, argv, &opt);
+
+    free_patterns(&opt);
+  }
+
+  return is_error ? 1 : 0;
 }
