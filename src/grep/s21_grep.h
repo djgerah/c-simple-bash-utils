@@ -33,7 +33,7 @@ void initialization(grep_opt *opt) {
 // void process_v(grep_opt *opt, bool match_found, int file_count,
 //                const char *file_name, const char *line);
 // bool process_pattern(const char *pattern, const char *line, grep_opt *opt,
-//                      const char *file_name, int line_number, 
+//                      const char *file_name, int line_number,
 //                      // int *matches,
 //                      int file_count);
 // void check_v(grep_opt *opt);

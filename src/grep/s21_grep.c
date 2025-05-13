@@ -20,10 +20,13 @@ void free_patterns(grep_opt *opt) {
 }
 
 bool add_pattern(grep_opt *opt, const char *pattern) {
-  if (!pattern) return false;
+  if (!pattern) {
+    return false;
+  }
 
   char **new_patterns =
       realloc(opt->patterns, (opt->pattern_count + 1) * sizeof(char *));
+
   if (!new_patterns) {
     fprintf(stderr, "Memory allocation failed\n");
     return false;
@@ -31,6 +34,7 @@ bool add_pattern(grep_opt *opt, const char *pattern) {
 
   opt->patterns = new_patterns;
   opt->patterns[opt->pattern_count] = malloc(strlen(pattern) + 1);
+
   if (!opt->patterns[opt->pattern_count]) {
     fprintf(stderr, "Memory allocation failed\n");
     return false;
@@ -149,6 +153,7 @@ void print_match(grep_opt *opt, const char *file_name, int file_count,
     if (opt->o) {
       regex_t reg;
       int flags = REG_EXTENDED | (opt->i ? REG_ICASE : 0);
+
       if (regcomp(&reg, pattern, flags) == 0) {
         regmatch_t pmatch[1];
         const char *search_ptr = line;
@@ -158,6 +163,7 @@ void print_match(grep_opt *opt, const char *file_name, int file_count,
                  search_ptr + pmatch[0].rm_so);
           search_ptr += pmatch[0].rm_eo;
         }
+
         regfree(&reg);
       }
     } else {
@@ -167,18 +173,17 @@ void print_match(grep_opt *opt, const char *file_name, int file_count,
 }
 
 bool process_pattern(const char *pattern, const char *line, grep_opt *opt,
-                     const char *file_name, int line_number, int *matches,
-                     int file_count) {
+                     const char *file_name, int line_number, int file_count) {
   regex_t reg;
   int flags = REG_EXTENDED | (opt->i ? REG_ICASE : 0);
   bool match_found = false;
 
   if (regcomp(&reg, pattern, flags) == 0) {
     if (regexec(&reg, line, 0, NULL, 0) == 0) {
-      (*matches)++;
       match_found = true;
       print_match(opt, file_name, file_count, line, line_number, pattern);
     }
+
     regfree(&reg);
   }
 
@@ -191,11 +196,12 @@ void grep_in_file(grep_opt *opt, const char *file_name, int file_count) {
     if (!opt->s) {
       fprintf(stderr, "s21_grep: %s: No such file or directory\n", file_name);
     }
-    return;
+    exit(1);
   }
 
   char line[SIZE];
-  int line_number = 0, matches = 0;
+  int line_number = 0;
+  int matches = 0;
 
   while (fgets(line, sizeof(line), file) != NULL) {
     bool match_found = false;
@@ -204,11 +210,26 @@ void grep_in_file(grep_opt *opt, const char *file_name, int file_count) {
     for (int i = 0; i < opt->pattern_count; i++) {
       const char *pattern = opt->patterns[i];
       match_found = process_pattern(pattern, line, opt, file_name, line_number,
-                                    &matches, file_count);
+                                    file_count);
     }
 
-    if (opt->v && !match_found) {
+    if (match_found && !opt->v) {
       matches++;
+    }
+
+    if (!match_found && opt->v) {
+      matches++;
+      if (!opt->c && !opt->l) {
+        if (!opt->h && file_count > 1) {
+          printf("%s:", file_name);
+        }
+
+        if (opt->n) {
+          printf("%d:", line_number);
+        }
+
+        printf("%s", line);
+      }
     }
   }
 
@@ -224,7 +245,7 @@ void grep_in_file(grep_opt *opt, const char *file_name, int file_count) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc < 3) {
+  if (argc < 2) {
     fprintf(stderr, "s21_grep: too few arguments.\n");
     return 1;
   }
