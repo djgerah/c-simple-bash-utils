@@ -6,6 +6,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#define OK 0
+
 bool handle_error() {
   fprintf(stderr, "Usage: [OPTION]... PATTERN [FILE]...\n");
   fprintf(stderr, "Try 's21_grep --help' for more information.\n");
@@ -196,7 +198,7 @@ void grep_in_file(grep_opt *opt, const char *file_name, int file_count) {
     if (!opt->s) {
       fprintf(stderr, "s21_grep: %s: No such file or directory\n", file_name);
     }
-    exit(1);
+    return;
   }
 
   char line[SIZE];
@@ -205,21 +207,36 @@ void grep_in_file(grep_opt *opt, const char *file_name, int file_count) {
 
   while (fgets(line, sizeof(line), file) != NULL) {
     bool match_found = false;
-    ++line_number;
+    line_number++;
 
     for (int i = 0; i < opt->pattern_count; i++) {
       const char *pattern = opt->patterns[i];
       match_found = process_pattern(pattern, line, opt, file_name, line_number,
                                     file_count);
-    }
 
-    if (match_found && !opt->v) {
-      matches++;
+      if (match_found && !opt->v) {
+        matches++;
+
+        if (opt->l) {
+          process_l(1, file_name);
+
+          return;
+        }
+
+        break;
+      }
     }
 
     if (!match_found && opt->v) {
       matches++;
-      if (!opt->c && !opt->l) {
+
+      if (opt->l) {
+        process_l(1, file_name);
+
+        return;
+      }
+
+      if (!opt->c) {
         if (!opt->h && file_count > 1) {
           printf("%s:", file_name);
         }
@@ -235,19 +252,15 @@ void grep_in_file(grep_opt *opt, const char *file_name, int file_count) {
 
   fclose(file);
 
-  if (opt->c) {
+  if (opt->c && !opt->l) {
     process_c(opt, file_count, file_name, matches);
-  }
-
-  if (opt->l) {
-    process_l(matches, file_name);
   }
 }
 
 bool grep_process(int argc, char *argv[], grep_opt *opt) {
   bool is_error = false;
 
-  if (parse_arguments(argc, argv, opt) == 0) {
+  if (parse_arguments(argc, argv, opt) == OK) {
     int file_count = argc - optind;
     for (int i = optind; i < argc; i++) {
       grep_in_file(opt, argv[i], file_count);
