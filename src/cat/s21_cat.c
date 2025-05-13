@@ -44,7 +44,8 @@ bool parse_arguments(int argc, char *argv[], cat_opt *opt) {
         process_e(opt);
         break;
       case 'E':
-        opt->e = true;
+        // opt->e = true;
+        process_e(opt);
         break;
       case 'n':
         opt->n = true;
@@ -79,7 +80,7 @@ void cat_file(const char *file_name, cat_opt *opt) {
     return;
   }
 
-  char cur_char;
+  int cur_char;
   bool new_line = true;
   bool last_was_blank = false;
   int line = 1;
@@ -117,7 +118,7 @@ void cat_file(const char *file_name, cat_opt *opt) {
     }
 
     // Handle -v (show non-printable characters)
-    if (opt->v && cur_char != '\n' && cur_char != '\t') {
+    if (opt->v && (cur_char != '\n' && cur_char != '\t')) {
       if (cur_char >= 0 && cur_char <= 31) {
         putchar('^');
         cur_char += 64;
@@ -135,22 +136,41 @@ void cat_file(const char *file_name, cat_opt *opt) {
   fclose(file);
 }
 
+bool cat_process(int argc, char *argv[], cat_opt *opt) {
+  bool is_error = false;
+
+  if (parse_arguments(argc, argv, opt) == 0) {
+    for (int i = optind; i < argc; i++) {
+      cat_file(argv[i], opt);
+    }
+  } else {
+    is_error = true;
+  }
+
+  return is_error;
+}
+
+void initialization(cat_opt *opt) {
+  opt->b = false;
+  opt->e = false;
+  opt->n = false;
+  opt->s = false;
+  opt->t = false;
+  opt->v = false;
+}
+
 int main(int argc, char *argv[]) {
+  bool is_error = false;
+
   if (argc < 2) {
     fprintf(stderr, "s21_cat: too few arguments.\n");
-    return handle_error();
+    is_error = handle_error();
+  } else {
+    cat_opt opt;
+    initialization(&opt);
+
+    is_error = cat_process(argc, argv, &opt);
   }
 
-  cat_opt opt;
-  initialization(&opt);
-
-  if (parse_arguments(argc, argv, &opt)) {
-    return 1;
-  }
-
-  for (int i = optind; i < argc; i++) {
-    cat_file(argv[i], &opt);
-  }
-
-  return 0;
+  return is_error ? 1 : 0;
 }

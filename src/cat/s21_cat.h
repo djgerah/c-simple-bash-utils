@@ -9,15 +9,7 @@ typedef struct {
   bool b, e, v, n, s, t;
 } cat_opt;
 
-inline void initialization(cat_opt *opt) {
-  opt->b = false;
-  opt->e = false;
-  opt->n = false;
-  opt->s = false;
-  opt->t = false;
-  opt->v = false;
-}
-
+void initialization(cat_opt *opt);
 bool handle_error();
 void process_e(cat_opt *opt);
 void process_tv(cat_opt *opt);

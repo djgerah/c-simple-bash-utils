@@ -1,6 +1,8 @@
 CC = gcc
 CFLAGS = -Wall -Werror -Wextra -std=c11
 
+.PHONY: all build s21_cat test check valgrind clang clean rebuild
+
 all: build
 
 build: s21_cat
@@ -18,7 +20,7 @@ test:
 check:
 	cppcheck --enable=all --suppress=missingIncludeSystem --suppress=constParameterPointer --suppress=checkersReport *.h *.c
 
-leaks:
+valgrind:
 	valgrind --tool=memcheck --leak-check=yes test out
 	
 clang:

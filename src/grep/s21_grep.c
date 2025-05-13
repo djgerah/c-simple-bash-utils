@@ -44,16 +44,15 @@ bool add_pattern(grep_opt *opt, const char *pattern) {
 
 void process_c(grep_opt *opt, int file_count, const char *file_name,
                int matches) {
-  if (opt->c) {
-    if (file_count > 1) {
-      printf("%s:", file_name);
-    }
-    printf("%d\n", matches);
+  if (file_count > 1 && !opt->h) {
+    printf("%s:", file_name);
   }
+
+  printf("%d\n", matches);
 }
 
-void process_l(grep_opt *opt, int matches, const char *file_name) {
-  if (opt->l && matches > 0) {
+void process_l(int matches, const char *file_name) {
+  if (matches > 0) {
     printf("%s\n", file_name);
   }
 }
@@ -136,12 +135,13 @@ bool parse_arguments(int argc, char *argv[], grep_opt *opt) {
   return is_error;
 }
 
-void process_reg(grep_opt *opt, int file_count, int line_number,
-                 const char *file_name, const char *line, const char *pattern) {
+void print_match(grep_opt *opt, const char *file_name, int file_count,
+                 const char *line, int line_number, const char *pattern) {
   if (!opt->c && !opt->l && !opt->v) {
     if (!opt->h && file_count > 1) {
       printf("%s:", file_name);
     }
+
     if (opt->n) {
       printf("%d:", line_number);
     }
@@ -177,7 +177,7 @@ bool process_pattern(const char *pattern, const char *line, grep_opt *opt,
     if (regexec(&reg, line, 0, NULL, 0) == 0) {
       (*matches)++;
       match_found = true;
-      process_reg(opt, file_count, line_number, file_name, line, pattern);
+      print_match(opt, file_name, file_count, line, line_number, pattern);
     }
     regfree(&reg);
   }
@@ -185,7 +185,7 @@ bool process_pattern(const char *pattern, const char *line, grep_opt *opt,
   return match_found;
 }
 
-void grep_in_file(grep_opt *opt, const char *file_name) {
+void grep_in_file(grep_opt *opt, const char *file_name, int file_count) {
   FILE *file = fopen(file_name, "r");
   if (!file) {
     if (!opt->s) {
@@ -196,7 +196,6 @@ void grep_in_file(grep_opt *opt, const char *file_name) {
 
   char line[SIZE];
   int line_number = 0, matches = 0;
-  int file_count = opt->pattern_count;
 
   while (fgets(line, sizeof(line), file) != NULL) {
     bool match_found = false;
@@ -214,8 +213,14 @@ void grep_in_file(grep_opt *opt, const char *file_name) {
   }
 
   fclose(file);
-  if (opt->c) printf("%d\n", matches);
-  if (opt->l && matches > 0) printf("%s\n", file_name);
+
+  if (opt->c) {
+    process_c(opt, file_count, file_name, matches);
+  }
+
+  if (opt->l) {
+    process_l(matches, file_name);
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -227,15 +232,14 @@ int main(int argc, char *argv[]) {
   grep_opt opt;
   initialization(&opt);
 
-  if (parse_arguments(argc, argv, &opt)) {
-    return 1;
-  }
-
-  for (int i = optind; i < argc; i++) {
-    grep_in_file(&opt, argv[i]);
+  if (parse_arguments(argc, argv, &opt) == 0) {
+    int file_count = argc - optind;
+    for (int i = optind; i < argc; i++) {
+      grep_in_file(&opt, argv[i], file_count);
+    }
   }
 
   free_patterns(&opt);
-  
+
   return 0;
 }
