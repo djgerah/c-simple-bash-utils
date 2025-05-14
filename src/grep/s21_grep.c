@@ -101,9 +101,6 @@ bool parse_arguments(int argc, char *argv[], grep_opt *opt) {
       case 'i':
         opt->i = true;
         break;
-      case 'v':
-        opt->v = true;
-        break;
       case 'c':
         opt->c = true;
         break;
@@ -121,6 +118,10 @@ bool parse_arguments(int argc, char *argv[], grep_opt *opt) {
         break;
       case 'o':
         opt->o = true;
+        break;
+      case 'v':
+        opt->v = true;
+        opt->o = false;
         break;
       case 'e':
         process_e(option, opt);
@@ -152,7 +153,7 @@ void print_match(grep_opt *opt, const char *file_name, int file_count,
       printf("%d:", line_number);
     }
 
-    if (opt->o) {
+if (opt->o && !opt->v) {
       regex_t reg;
       int flags = REG_EXTENDED | (opt->i ? REG_ICASE : 0);
 
@@ -227,7 +228,7 @@ void grep_in_file(grep_opt *opt, const char *file_name, int file_count) {
       }
     }
 
-    if (!match_found && opt->v) {
+    if (!match_found && opt->v && !opt->o) {
       matches++;
 
       if (opt->l) {
