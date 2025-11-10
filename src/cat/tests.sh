@@ -1,43 +1,35 @@
 #!/bin/bash
 
-./s21_cat s21_cat.c > s21_cat.txt
-cat s21_cat.c > cat.txt
-diff -s s21_cat.txt cat.txt
-rm s21_cat.txt cat.txt
-echo "no flags test"
+set -e
 
-./s21_cat -b s21_cat.c > s21_cat.txt
-cat -b s21_cat.c > cat.txt
-diff -s s21_cat.txt cat.txt
-rm s21_cat.txt cat.txt
-echo "-b test"
+green="\033[0;32m"
+reset="\033[0m"
 
-./s21_cat -e s21_cat.c > s21_cat.txt
-cat -e s21_cat.c > cat.txt
-diff -s s21_cat.txt cat.txt
-rm s21_cat.txt cat.txt
-echo "-e test"
+VG=""
 
-./s21_cat -n s21_cat.c > s21_cat.txt
-cat -n s21_cat.c > cat.txt
-diff -s s21_cat.txt cat.txt
-rm s21_cat.txt cat.txt
-echo "-n test"
+if [ "$1" = "valgrind" ]; then
+    VG="valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes"
+fi
 
-./s21_cat -s s21_cat.c > s21_cat.txt
-cat -s s21_cat.c > cat.txt
-diff -s s21_cat.txt cat.txt
-rm s21_cat.txt cat.txt
-echo "-s test"
+run_test() {
+    echo "$2"
+    $VG ./s21_cat $1 > s21_cat.txt
+    cat $1 > cat.txt
+    diff -s s21_cat.txt cat.txt
+    echo
+    rm s21_cat.txt cat.txt
+}
 
-./s21_cat -t s21_cat.c > s21_cat.txt
-cat -t s21_cat.c > cat.txt
-diff -s s21_cat.txt cat.txt
-rm s21_cat.txt cat.txt
-echo "-t test"
+echo -e "Hello\n\nWorld !\nTest\r\n" > test.txt
 
-./s21_cat -v s21_cat.c > s21_cat.txt
-cat -v s21_cat.c > cat.txt
-diff -s s21_cat.txt cat.txt
-rm s21_cat.txt cat.txt
-echo "-v test"
+run_test "test.txt" "no flags test"
+run_test "-b test.txt" "-b test"
+run_test "-e test.txt" "-e test"
+run_test "-n test.txt" "-n test"
+run_test "-s test.txt" "-s test"
+run_test "-t test.txt" "-t test"
+run_test "-v test.txt" "-v test"
+
+rm test.txt
+
+echo -e "${green}All tests completed!${reset}"

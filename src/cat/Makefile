@@ -1,8 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Werror -Wextra -std=c11
 
-.PHONY: all build s21_cat test check valgrind clang clean rebuild
-
 all: build
 
 build: s21_cat
@@ -13,20 +11,22 @@ s21_cat: s21_cat.o
 s21_cat.o: s21_cat.c
 	$(CC) $(CFLAGS) -c s21_cat.c
 
-test:
-	chmod +x cat_tests/tests.sh
-	./cat_tests/tests.sh
+.PHONY: test cppcheck valgrind clang clean rebuild
 
-check:
-	cppcheck --enable=all --suppress=missingIncludeSystem --suppress=constParameterPointer --suppress=checkersReport *.h *.c
+test: clean s21_cat
+	chmod +x tests.sh
+	./tests.sh
 
-valgrind:
-	valgrind --tool=memcheck --leak-check=yes test out
+cppcheck:
+	cppcheck --enable=all --suppress=missingIncludeSystem --suppress=constParameter --suppress=constParameterPointer --suppress=checkersReport *.h *.c
+
+valgrind: s21_cat
+	bash ./tests.sh valgrind
 	
 clang:
 	clang-format -style=Google -i *.h *.c
 
 clean:
-	rm -rf s21_cat *.o
+	rm -rf *.o s21_cat
 
-rebuild: all
+rebuild: clean all
